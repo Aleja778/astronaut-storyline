@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Suit Anatomy - Interactive 3D</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 50%, #0f3460 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+            backdrop-filter: blur(15px);
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .info-panel.active {
+            transform: translateX(0);
+        }
+
+        .info-panel h2 {
+            color: #1a1a3e;
+            margin-bottom: 8px;
+            font-size: 26px;
+            font-weight: 700;
+            border-bottom: 3px solid #e94560;
+            padding-bottom: 12px;
+        }
+
+        .info-panel .tech-spec {
+            color: #e94560;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .info-panel p {
+            color: #2c3e50;
+            line-height: 1.7;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .info-panel .function-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .info-panel .function-box strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-btn:hover {
+            background: #e94560;
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        /* Hotspots - Space Theme */
+        .hotspot {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #e94560 0%, #c73e54 100%);
+            border: 3px solid white;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.6), 0 0 40px rgba(233, 69, 96, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .hotspot:hover {
+            transform: scale(1.25);
+            background: radial-gradient(circle, #ff6b6b 0%, #e94560 100%);
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.8), 0 0 60px rgba(233, 69, 96, 0.4);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.7);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 20px rgba(233, 69, 96, 0);
+                transform: scale(1.05);
+            }
+        }
+
+        /* Sidebar Controls */
+        .sidebar {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar button {
+            width: 55px;
+            height: 55px;
+            border-radius: 15px;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .sidebar button:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .sidebar button.active {
+            background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        /* Main Title */
+        .main-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 40px;
+            border-radius: 50px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(233, 69, 96, 0.2);
+        }
+
+        .main-title h1 {
+            color: #1a1a3e;
+            font-size: 32px;
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .main-title p {
+            color: #e94560;
+            font-size: 14px;
+            margin: 8px 0 0 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* AR Button */
+        .ar-button-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .ar-button {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.4);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ar-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 210, 255, 0.6);
+        }
+
+        /* Progress Indicator */
+        .progress-bar {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            padding: 15px 25px;
+            border-radius: 30px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #bdc3c7;
+            transition: all 0.3s;
+        }
+
+        .progress-dot.active {
+            background: #e94560;
+            transform: scale(1.3);
+            box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+
+        /* Loading Screen */
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .info-panel {
+                width: 90%;
+                right: 5%;
+                left: 5%;
+                top: auto;
+                bottom: 120px;
+                transform: translateY(500px);
+                max-height: 50vh;
+            }
+            
+            .info-panel.active {
+                transform: translateY(0);
+            }
+            
+            .sidebar {
+                flex-direction: row;
+                top: auto;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 15px;
+            }
+            
+            .sidebar button {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+            
+            .main-title {
+                padding: 15px 25px;
+                width: 90%;
+            }
+            
+            .main-title h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <!-- Title -->
+        <div class="main-title">
+            <h1>🚀 EMU Space Suit</h1>
+            <p>Extravehicular Mobility Unit</p>
+        </div>
+
+        <!-- Loading Screen -->
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <span>Loading Space Suit Model...</span>
+            <small style="opacity: 0.7; font-size: 14px;">Preparing for EVA</small>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel" id="infoPanel">
+            <button class="close-btn" onclick="closePanel()">×</button>
+            <h2 id="partName">Select a Component</h2>
+            <div class="tech-spec" id="techSpec">NASA Technical Specification</div>
+            <p id="partDescription">Click on the numbered hotspots to explore the space suit systems and learn about their functions during Extravehicular Activities (EVA).</p>
+            <div class="function-box">
+                <strong>🔧 Primary Function</strong>
+                <span id="functionText">Explore the suit to discover how each component protects astronauts in the vacuum of space.</span>
+            </div>
+        </div>
+
+        <!-- Sidebar Controls -->
+        <div class="sidebar">
+            <button onclick="changeView('front')" title="Front View">👤</button>
+            <button onclick="changeView('side')" title="Side View">👥</button>
+            <button onclick="changeView('back')" title="Rear View">🔄</button>
+            <button onclick="changeView('top')" title="Top View">⬆️</button>
+            <button onclick="toggleAutoRotate()" title="Auto-Rotate" id="btnRotate">🔄</button>
+            <button onclick="resetView()" title="Reset View">🏠</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-dot" data-part="helmet"></div>
+            <div class="progress-dot" data-part="chest"></div>
+            <div class="progress-dot" data-part="backpack"></div>
+            <div class="progress-dot" data-part="gloves"></div>
+            <div class="progress-dot" data-part="boots"></div>
+            <div class="progress-dot" data-part="suit"></div>
+        </div>
+
+        <!-- AR Button Container -->
+        <div class="ar-button-container">
+            <button slot="ar-button" class="ar-button">
+                📱 View in Your Space
+            </button>
+        </div>
+
+        <!-- 3D Model with Hotspots -->
+        <model-viewer 
+            id="astronautModel"
+            src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+            ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.usdz"
+            poster="https://modelviewer.dev/shared-assets/models/Astronaut.png"
+            alt="NASA Astronaut in Extravehicular Mobility Unit (EMU)"
+            camera-controls
+            auto-rotate
+            auto-rotate-delay="2000"
+            rotation-per-second="15deg"
+            camera-orbit="0deg 75deg 2.5m"
+            field-of-view="30deg"
+            exposure="1.2"
+            shadow-intensity="1.5"
+            shadow-softness="0.8"
+            environment-image="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr"
+            skybox-image="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr"
+            interaction-prompt="none"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            ar-scale="fixed"
+            onload="modelLoaded()">
+
+            <!-- Hotspot 1: Helmet/Visor -->
+            <button class="hotspot" slot="hotspot-helmet" 
+                data-position="0 0.35 0.15" 
+                data-normal="0 0.3 1"
+                onclick="showInfo('helmet')">
+                1
+            </button>
+
+            <!-- Hotspot 2: Primary Life Support System (Backpack) -->
+            <button class="hotspot" slot="hotspot-backpack" 
+                data-position="0 0.2 -0.25" 
+                data-normal="0 0 -1"
+                onclick="showInfo('backpack')">
+                2
+            </button>
+
+            <!-- Hotspot 3: Chest Control Module -->
+            <button class="hotspot" slot="hotspot-chest" 
+                data-position="0 0.05 0.25" 
+                data-normal="0 0 1"
+                onclick="showInfo('chest')">
+                3
+            </button>
+
+            <!-- Hotspot 4: Gloves -->
+            <button class="hotspot" slot="hotspot-gloves" 
+                data-position="0.35 -0.15 0.1" 
+                data-normal="1 0 0"
+                onclick="showInfo('gloves')">
+                4
+            </button>
+
+            <!-- Hotspot 5: Boots/Foot Restraints -->
+            <button class="hotspot" slot="hotspot-boots" 
+                data-position="0.1 -0.45 0.1" 
+                data-normal="0 -1 0.5"
+                onclick="showInfo('boots')">
+                5
+            </button>
+
+            <!-- Hotspot 6: Suit Layers -->
+            <button class="hotspot" slot="hotspot-suit" 
+                data-position="-0.2 0.1 0.15" 
+                data-normal="-1 0 0"
+                onclick="showInfo('suit')">
+                6
+            </button>
+
+        </model-viewer>
+    </div>
+
+    <script>
+        // Space Suit Database
+        const suitData = {
+            helmet: {
+                name: "Helmet Assembly",
+                techSpec: "NASA STD-3000T Class I",
+                description: "The Extravehicular Visor Assembly (EVVA) provides a pressure vessel for the astronaut's head while offering 360-degree visibility. The gold-coated visor reflects solar radiation and protects against micrometeoroids traveling at speeds up to 17,500 mph. The helmet includes a communications carrier assembly (CCA) with dual earphones and microphones.",
+                function: "Maintains 4.3 psi pure oxygen atmosphere, protects against UV radiation, extreme temperatures (-250°F to +250°F), and orbital debris. The lights mounted on the sides provide illumination during orbital night."
+            },
+            backpack: {
+                name: "Primary Life Support System",
+                techSpec: "PLSS - 7 Hour Duration",
+                description: "The PLSS is a self-contained backpack that provides everything an astronaut needs to survive in space for 7 to 8 hours. It weighs approximately 310 pounds on Earth (but only 0 pounds in microgravity). Contains oxygen tanks, CO2 scrubbers (lithium hydroxide canisters), batteries, radios, and cooling water tanks.",
+                function: "Supplies breathing oxygen, removes CO2, regulates temperature via liquid cooling garment, provides electrical power, and maintains communications with Mission Control and other crew members."
+            },
+            chest: {
+                name: "Display & Control Module",
+                techSpec: "DCM - 3.5 inch LCD",
+                description: "The chest-mounted control unit serves as the astronaut's dashboard in space. It displays critical information including oxygen levels, battery status, CO2 levels, suit pressure, and water temperature. The astronaut can control suit functions using pushbuttons while wearing bulky gloves.",
+                function: "Real-time monitoring of life support systems, alarm warnings for critical parameters, and manual override capabilities for emergency situations. The display is readable in direct sunlight and complete darkness."
+            },
+            gloves: {
+                name: "Pressure Gloves with Heaters",
+                techSpec: "Phase VI Glove Assembly",
+                description: "These pressurized gloves are the most challenging part of the suit design. They must provide protection while allowing enough dexterity to use tools and handle delicate equipment. Each glove has heaters in the fingertips to prevent frostbite during cold orbital night periods.",
+                function: "Maintain pressure integrity while allowing finger movement for tool manipulation. The silicone rubber fingertips provide tactile feedback, and the heaters maintain operational temperature in the vacuum of space where heat transfer is difficult."
+            },
+            boots: {
+                name: "Boots with Foot Restraints",
+                techSpec: "Hard Upper Torso Integration",
+                description: "The boots are integrated into the suit's Hard Upper Torso (HUT). They feature special foot restraints that lock into the International Space Station's footplates, allowing astronauts to work hands-free without drifting away. The boots have thermal insulation and micrometeoroid protection.",
+                function: "Enable stable positioning during EVA tasks, protect feet from extreme temperatures and sharp objects, and integrate with spacecraft foot restraint systems for hands-free operations."
+            },
+            suit: {
+                name: "Multi-Layer Insulation Suit",
+                techSpec: "14 Layer Protection System",
+                description: "The space suit consists of 14 layers providing different functions: The innermost Liquid Cooling and Ventilation Garment (LCVG) has tubes of water to regulate body temperature. Next is the pressure bladder layer, followed by a restraint layer to maintain shape. The outer layers include thermal insulation, micrometeoroid protection, and a white reflective coating.",
+                function: "Creates a portable Earth environment: maintains pressure, regulates temperature (body heat can rise to dangerous levels even in cold space), protects against radiation, and prevents penetration by micrometeoroids. The white color reflects sunlight to prevent overheating."
+            }
+        };
+
+        let autoRotate = true;
+        let visitedParts = new Set();
+        const modelViewer = document.getElementById('astronautModel');
+
+        // Model loaded callback
+        function modelLoaded() {
+            document.getElementById('loader').style.display = 'none';
+            console.log('Astronaut model loaded successfully');
+            
+            // Notify Storyline
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'astronaut-loaded',
+                    timestamp: new Date().toISOString()
+                }, '*');
+            }
+        }
+
+        // Show information panel
+        function showInfo(part) {
+            const data = suitData[part];
+            if (!data) return;
+
+            document.getElementById('partName').textContent = data.name;
+            document.getElementById('techSpec').textContent = data.techSpec;
+            document.getElementById('partDescription').textContent = data.description;
+            document.getElementById('functionText').textContent = data.function;
+            
+            document.getElementById('infoPanel').classList.add('active');
+            
+            // Stop auto-rotation when interacting
+            modelViewer.autoRotate = false;
+            autoRotate = false;
+            document.getElementById('btnRotate').classList.remove('active');
+
+            // Update progress
+            if (!visitedParts.has(part)) {
+                visitedParts.add(part);
+                updateProgress();
+            }
+
+            // Send tracking to Storyline
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'hotspot-click',
+                    part: part,
+                    name: data.name,
+                    timestamp: new Date().toISOString(),
+                    progress: (visitedParts.size / 6) * 100
+                }, '*');
+            }
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const dots = document.querySelectorAll('.progress-dot');
+            const parts = ['helmet', 'chest', 'backpack', 'gloves', 'boots', 'suit'];
+            
+            parts.forEach((part, index) => {
+                if (visitedParts.has(part)) {
+                    dots[index].classList.add('active');
+                }
+            });
+
+            // Check completion
+            if (visitedParts.size === 6) {
+                setTimeout(() => {
+                    showCompletion();
+                }, 1000);
+            }
+        }
+
+        // Show completion message
+        function showCompletion() {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'exploration-complete',
+                    message: 'All space suit components explored!'
+                }, '*');
+            }
+        }
+
+        // Close panel
+        function closePanel() {
+            document.getElementById('infoPanel').classList.remove('active');
+        }
+
+        // Change camera views
+        function changeView(view) {
+            const orbits = {
+                front: '0deg 90deg 2m',
+                side: '90deg 75deg 2m',
+                back: '180deg 75deg 2m',
+                top: '0deg 0deg 2m'
+            };
+            
+            if (orbits[view]) {
+                modelViewer.cameraOrbit = orbits[view];
+                
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'view-changed',
+                        view: view
+                    }, '*');
+                }
+            }
+        }
+
+        // Toggle auto-rotation
+        function toggleAutoRotate() {
+            autoRotate = !autoRotate;
+            modelViewer.autoRotate = autoRotate;
+            document.getElementById('btnRotate').classList.toggle('active', autoRotate);
+        }
+
+        // Reset view
+        function resetView() {
+            modelViewer.cameraOrbit = '0deg 75deg 2.5m';
+            modelViewer.fieldOfView = '30deg';
+            closePanel();
+            autoRotate = true;
+            modelViewer.autoRotate = true;
+            document.getElementById('btnRotate').classList.add('active');
+        }
+
+        // Listen for messages from Storyline
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'storyline-command') {
+                switch(event.data.command) {
+                    case 'show-part':
+                        showInfo(event.data.part);
+                        break;
+                    case 'change-view':
+                        changeView(event.data.view);
+                        break;
+                    case 'reset':
+                        resetView();
+                        break;
+                    case 'get-progress':
+                        if (window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'current-progress',
+                                visited: Array.from(visitedParts),
+                                percentage: (visitedParts.size / 6) * 100
+                            }, '*');
+                        }
+                        break;
+                }
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('btnRotate').classList.add('active');
+            
+            // Close panel when clicking outside
+            document.addEventListener('click', (e) => {
+                const panel = document.getElementById('infoPanel');
+                const isClickInside = panel.contains(e.target);
+                const isHotspot = e.target.classList.contains('hotspot');
+                
+                if (!isClickInside && !isHotspot && panel.classList.contains('active')) {
+                    closePanel();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
